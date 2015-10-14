@@ -11,7 +11,7 @@ type tcpServer struct {
 }
 
 func (t *tcpServer) Handle(clientConn net.Conn) {
-    t.ctx.s.logf("MyServer: new client(%s)", clientConn.RemoteAddr())
+    t.ctx.s.logf("new client(%s)", clientConn.RemoteAddr())
 
     buf := make([]byte, 4)
     _, err := io.ReadFull(clientConn, buf)
@@ -22,10 +22,9 @@ func (t *tcpServer) Handle(clientConn net.Conn) {
     }
     protocolMagic := string(buf)
     var prot proto.Protocol
-    t.ctx.s.logf("MyServer: %s", protocolMagic)
+    t.ctx.s.logf("version: %s", protocolMagic)
     switch protocolMagic {
     case "  V1": //when upgrade, V2, V3..., and can also support multi-version
-        t.ctx.s.logf("MyServer: magic v1")
         prot = &protocolV1{ctx: t.ctx}
     default:
         proto.SendFrameResponse(clientConn, 3, []byte("E_BAD_PROTOCOL"))

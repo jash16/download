@@ -114,8 +114,13 @@ func (s *Server) cacheLoop() {
         case <- expireCache.C:
             //
         case cev := <- s.cacheEventChan:
+            s.md5Lock.Lock()
             s.md5Cache.ProcessEvent(cev)
+            s.md5Lock.Unlock()
+
+            s.cacheLock.Lock()
             s.dataCache.ProcessEvent(cev)
+            s.cacheLock.Unlock()
         //process this file, md5, file content
         case <- s.exitChan:
             exitFlag = true

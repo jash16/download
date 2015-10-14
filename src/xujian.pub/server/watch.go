@@ -5,6 +5,7 @@ import (
     "strings"
     "github.com/howeyc/fsnotify"
 )
+
 func (s *Server)watchLoop() {
     s.logf("file watch start")
 	watcher, err := fsnotify.NewWatcher()
@@ -13,7 +14,7 @@ func (s *Server)watchLoop() {
         os.Exit(1)
 	}
 
-    done := make(chan bool)
+    //done := make(chan bool)
 	go func() {
 		for {
 			select {
@@ -30,7 +31,7 @@ func (s *Server)watchLoop() {
 	    s.logf(err.Error())
         os.Exit(1)
 	}
-    <-done
+    <- s.exitChan
     watcher.Close()
     s.logf("file watch quit")
 }

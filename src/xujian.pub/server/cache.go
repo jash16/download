@@ -2,8 +2,10 @@ package server
 
 import (
     "sync"
-    //"fmt"
+    "fmt"
+    "xujian.pub/common"
     "time"
+    "io/ioutil"
     //"errors"
     "strings"
 )
@@ -26,7 +28,31 @@ type MetaInfo struct {
 type MetaCache map[string]*MetaInfo
 
 func (m MetaCache)ProcessEvent(cev *cacheEvent) {
+    typ := cev.eventType
+    file := cev.filename
+    switch(typ) {
+    case ADD, MOD:
+        fmt.Printf("get metaInfo modify: %s", file)
+        md5, err := common.CalFileMd5(file)
+        if err != nil {
+            println(err.Error())
+        }
+        fileSize, err := common.GetFileSize(file)
+        if err != nil {
+            println(err.Error())
+        }
+        metaInfo := &MetaInfo {
+            FileName: file,
+            FileSize: fileSize,
+            Md5Info: md5,
+        }
+        m[file] = metaInfo
 
+    case DEL:
+        if _, ok := m[file]; ok {
+            delete(m, file)
+        }
+    }
 }
 
 type FileBlock struct {
@@ -148,6 +174,20 @@ func (c *Cache)ExpireBlockStep() int64 {
 }
 
 func (c *Cache)ProcessEvent(ev *cacheEvent) {
+    fmt.Printf("get data cache modify: %s\n", ev.filename)
+    typ := ev.eventType
+    file := ev.filename
+    switch(typ) {
+    case MOD:
+        data, err := ioutil.ReadFile(file)
+        if err != nil {
+            return
+        }
+        c.RemoveBlockByKey(file)
+        c.AddOrHitCache(file, data)
+    case DEL:
+        c.RemoveBlockByKey(file)
+    }
 }
 
 //you should keep start < end 
