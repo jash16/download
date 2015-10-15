@@ -33,7 +33,7 @@ func (s *Server)watchLoop() {
 	}
     <- s.exitChan
     watcher.Close()
-    s.logf("file watch quit")
+    s.logf("watchLoop quit")
 }
 
 func (s *Server)processEvent(ev *fsnotify.FileEvent) {
