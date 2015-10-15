@@ -114,6 +114,7 @@ func (s *Server) cacheLoop() {
         case <- expireCache.C:
             //
         case cev := <- s.cacheEventChan:
+            time.Sleep(1 * time.Second)
             s.md5Lock.Lock()
             s.md5Cache.ProcessEvent(cev)
             s.md5Lock.Unlock()
@@ -142,9 +143,9 @@ func (s *Server) statLoop() {
         select {
         case <- t.C:
             s.RLock()
-            s.logf("[download stat] total_clients: %d, current_clients: %d, download_num: %d, download_size: %d",
+            s.logf("total_clients: %d, current_clients: %d, download_num: %d, download_size: %d",
                    s.ClientNum, s.CurClientNum, s.DownloadNum, s.DownloadSize)
-            s.logf("[cache stat] cache_hits: %d, cache_miss: %d\n", s.dataCache.Hits, s.dataCache.MisHits)
+            s.logf("cache_hits: %d, cache_miss: %d\n", s.dataCache.Hits, s.dataCache.MisHits)
             s.RUnlock()
         case <- s.exitChan:
             exitFlag = true

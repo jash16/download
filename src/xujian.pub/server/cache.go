@@ -7,7 +7,7 @@ import (
     "time"
     "io/ioutil"
     //"errors"
-    "strings"
+//    "strings"
 )
 
 const (
@@ -27,19 +27,19 @@ type MetaInfo struct {
 
 type MetaCache map[string]*MetaInfo
 
-func (m MetaCache)ProcessEvent(cev *cacheEvent) {
+func (m MetaCache) ProcessEvent(cev *cacheEvent) error {
     typ := cev.eventType
     file := cev.filename
+    fmt.Printf("get metaInfo modify: %d, %s\n", typ, file)
     switch(typ) {
     case ADD, MOD:
-        fmt.Printf("get metaInfo modify: %s", file)
         md5, err := common.CalFileMd5(file)
         if err != nil {
-            println(err.Error())
+            return err
         }
         fileSize, err := common.GetFileSize(file)
         if err != nil {
-            println(err.Error())
+            return err
         }
         metaInfo := &MetaInfo {
             FileName: file,
@@ -47,12 +47,13 @@ func (m MetaCache)ProcessEvent(cev *cacheEvent) {
             Md5Info: md5,
         }
         m[file] = metaInfo
-
+        delete(m, file)
     case DEL:
         if _, ok := m[file]; ok {
             delete(m, file)
         }
     }
+    return nil
 }
 
 type FileBlock struct {
@@ -141,10 +142,18 @@ func (c *Cache)ReadData(file string, start, end int64) []byte {
     defer c.Unlock()
     b := c.LookupFile(file)
     if b != nil && b.FileSize >= end {
+        fmt.Printf("file: %s, hit the cache \n", file)
         data := make([]byte, end-start+1)
         copy(data, b.Data[start:end+1])
+        c.Hits ++
         return data
     }
+    if b == nil {
+        fmt.Printf("b is nil, file: %s\n", file)
+    } else {
+        fmt.Printf("file size: %d, end=%d\n", b.FileSize, end)
+    }
+    c.MisHits ++
     return nil
 }
 
@@ -154,11 +163,13 @@ func (c *Cache)RemoveBlock(key string, b *FileBlock) {
     c.Unlock()
 }
 
-func (c *Cache)RemoveBlockByKey(file string) {
+func (c *Cache) RemoveBlockByKey(file string) {
     c.Lock()
     for k, _ := range c.Blocks {
-         if strings.HasPrefix(k, file + "_") {
-             delete(c.Blocks, k)
+         //if strings.HasSuffix(k, file) {
+         if k == file {
+             fmt.Printf("delete file: %s, %s\n", k, file)
+             delete(c.Blocks, file)
          }
     }
     c.Unlock()
@@ -173,34 +184,41 @@ func (c *Cache)ExpireBlockStep() int64 {
     return int64(0)
 }
 
-func (c *Cache)ProcessEvent(ev *cacheEvent) {
-    fmt.Printf("get data cache modify: %s\n", ev.filename)
+func (c *Cache) ProcessEvent(ev *cacheEvent) error {
     typ := ev.eventType
     file := ev.filename
+    fmt.Printf("get data cache modify: %d, %s\n", typ, ev.filename)
     switch(typ) {
     case MOD:
         data, err := ioutil.ReadFile(file)
+        fmt.Printf("=============read event: data %s\n", data)
         if err != nil {
-            return
+            return err
         }
         c.RemoveBlockByKey(file)
-        c.AddOrHitCache(file, data)
+        //c.AddOrHitCache(file, data)
     case DEL:
         c.RemoveBlockByKey(file)
     }
+    return nil
 }
 
 //you should keep start < end 
 func (b *FileBlock)ReadData(start, end int64) []byte {
+    fmt.Printf("start: %d, end: %d, size: %d\n", start, end, b.FileSize)
     if (start >= 0 && end <= b.FileSize) {
-        return b.Data[start:end]
+        data := make([]byte, end-start+1)
+        copy(data, b.Data[start:end+1])
+        return data
     }
     return nil
 }
 
 func (b *FileBlock)SetData(data []byte) {
+    fmt.Printf("set data: %s\n", data)
     fileSize := len(data)
     b.Data = make([]byte, fileSize)
+    b.FileSize = int64(fileSize)
     b.Hits = 1
     b.StartTime , b.LastAccess = time.Now().Unix(), time.Now().Unix()
     copy(b.Data, data)
