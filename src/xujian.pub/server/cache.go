@@ -12,10 +12,10 @@ import (
 
 const (
     defaultCacheSizePerBlock int64 = 1048576 // 1M
-    ADD int = 0
-    DEL int = 1
-    MOD int = 2
-    RENAME int = 3
+    //ADD int = 0
+    //DEL int = 1
+    //MOD int = 2
+    //RENAME int = 3
 )
 
 type MetaInfo struct {

@@ -19,6 +19,8 @@ type Server struct {
     err error
     Clients map[string]*Client //clients
 
+    lookupPeers []*lookupPeer
+
     notifyChan chan interface{}
     exitChan   chan int
 
@@ -103,6 +105,24 @@ func (s *Server) Main() {
     s.wg.Wrap(func() {
         s.watchLoop()
     })
+}
+
+//file1,file2,file3
+func (s *Server) LocalFiles() []string {
+    var files []string
+    root := s.Opts.DataPath
+    if root[len(root)-1] != '/' {
+        root = fmt.Sprintf("%s/", root)
+    }
+
+    filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+        if ! info.IsDir() {
+            basename := strings.TrimPrefix(path, root)
+            files = append(files, basename)
+        }
+    })
+
+    return files
 }
 
 func (s *Server) cacheLoop() {

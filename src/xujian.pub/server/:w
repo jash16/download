@@ -1,0 +1,12 @@
+package server
+
+import (
+    "fmt"
+    "net"
+    "time"
+)
+
+//lookupPeer do the job to connect the lookup server
+type lookupPeer struct {
+aaaaaaaa
+}

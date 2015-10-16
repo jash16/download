@@ -11,7 +11,9 @@ import (
 type ServerOption struct {
     //server info host:port
     TCPAddress string `flag:"tcp-address"`
+    HttpAddress string `flag:"http-address"`
     Verbose bool       `flag:"verbose"`
+    LookupSrvAddrs []string `flag:"lookup-tcp-address"`
 
     //cache
     Cached bool        `flag:"cached"`
