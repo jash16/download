@@ -75,7 +75,17 @@ func (s *Server)lookupLoop() {
             }
 
         case <- loadTicker:
-            
+            var pload peerLoad
+            var cmd common.Command
+
+            pload = s.getLoad()
+            cmd = common.Load(pload)
+            for _, lp := range(s.lookupPeers) {
+                _, err := lp.Command(cmd)
+                if err != nil {
+                    s.logf("lookupd(%s) error: %s - %s", lp, cmd, err)
+                }
+            }
         case val := <- s.notifyChan:
             var cmd common.Command
             var typ int32
