@@ -55,6 +55,7 @@ func (s *Server)lookupLoop() {
     }
 
     ticker := time.Tick(15 * time.Second)
+    loadTicker := time.Tick(60 * time.Second)
     for {
         select {
         case <- ticker:
@@ -73,9 +74,27 @@ func (s *Server)lookupLoop() {
                 s.logf("lookupd(%s) error: %s - %s", lp, cmd, err)
             }
 
+        case <- loadTicker:
+            
         case val := <- s.notifyChan:
+            var cmd common.Command
+            var typ int32
+            var files []string
             switch(val.(type)) {
-            case 
+            case *FileChange:
+                typ = val.(*FileChange).typ
+                files = []string{val.(*FileChange).file}
+
+                switch (typ) {
+                case ADD:
+                    cmd = common.Rigister(files)
+                case DEL:
+                    cmd = common.UnRigister(files)
+                }
+            }
+            _, err := lp.Command(cmd)
+            if err != nil {
+                n.logf("lookupd(%s) error: %s - %s", lp, cmd, err)
             }
         case <- s.exitChan:
             goto exit

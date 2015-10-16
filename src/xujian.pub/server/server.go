@@ -105,6 +105,11 @@ func (s *Server) Main() {
     s.wg.Wrap(func() {
         s.watchLoop()
     })
+
+    //lookup server
+    s.wg.Wrap(func() {
+        s.lookupLoop()
+    })
 }
 
 //file1,file2,file3
@@ -134,7 +139,7 @@ func (s *Server) cacheLoop() {
         case <- expireCache.C:
             //
         case cev := <- s.cacheEventChan:
-            time.Sleep(1 * time.Second)
+            //time.Sleep(1 * time.Second)
             s.md5Lock.Lock()
             s.md5Cache.ProcessEvent(cev)
             s.md5Lock.Unlock()
@@ -142,6 +147,9 @@ func (s *Server) cacheLoop() {
             s.cacheLock.Lock()
             s.dataCache.ProcessEvent(cev)
             s.cacheLock.Unlock()
+
+            s.notifyFileChange(cev.eventType, cev.filename)
+
         //process this file, md5, file content
         case <- s.exitChan:
             exitFlag = true
@@ -238,4 +246,17 @@ func (s *Server) DeleteMetaCache(file string) {
     s.md5Lock.Lock()
     defer s.md5Lock.Unlock()
     delete(s.md5Cache, file)
+}
+
+func (s *Server)notifyFileChange(typ int32, filename string) {
+    fc := &FileChange {
+        typ: typ,
+        file: filename
+    }
+    s.notifyChan <- fc
+    return
+}
+
+func (s *Server)getLoad() *peerLoad {
+    return &peerLoad {}
 }
