@@ -72,3 +72,20 @@ func SendFrameResponse(w io.Writer, frameType uint32, data []byte)(int, error) {
     }
     return n + 8, nil
 }
+
+func ReadResponse(r io.Reader) ([]byte, err) {
+    var msgSize int32
+
+    err := binary.Read(r, binary.BigEndian, &msgSize)
+    if err != nil {
+        return nil, err
+    }
+
+    buf := make([]byte, msgSize)
+
+    _, err := io.ReadFull(r, buf)
+    if err != nil {
+        return nil, err
+    }
+    return buf, err
+}
