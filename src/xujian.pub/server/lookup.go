@@ -3,6 +3,7 @@ package server
 import (
     "os"
     "time"
+    "xujian.pub/common"
 )
 
 type FileChange struct {
@@ -79,7 +80,12 @@ func (s *Server)lookupLoop() {
             var cmd common.Command
 
             pload = s.getLoad()
-            cmd = common.Load(pload)
+            ploadBuf, err := json.Marshal(pload)
+            if err != nil {
+                s.logf("lookup(d) error: json.Marshal failed, err: %s", err)
+                break
+            }
+            cmd = common.Load(ploadBuf)
             for _, lp := range(s.lookupPeers) {
                 _, err := lp.Command(cmd)
                 if err != nil {
@@ -110,6 +116,8 @@ func (s *Server)lookupLoop() {
             goto exit
         }
     }
+
 exit:
+    close(syncLocalFileChan)
     s.logf("lookupLoop quit")
 }
