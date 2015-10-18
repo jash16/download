@@ -1,8 +1,10 @@
 package common
 
 import (
+    "io"
     "strings"
     "encoding/json"
+    "encoding/binary"
 )
 
 type Command struct {
@@ -16,7 +18,7 @@ var (
     byteNewLine = []byte("\n")
 )
 
-func (c *Command) WriteTo(w io.Writer) (int, error) {
+func (c *Command) WriteTo(w io.Writer) (int64, error) {
     var total int64
     var buf [4]byte
 
@@ -49,7 +51,7 @@ func (c *Command) WriteTo(w io.Writer) (int, error) {
         bodyLen := len(c.Body)
         bufs := buf[:]
         binary.BigEndian.PutUint32(bufs, uint32(bodyLen))
-        n, err := w.Write(buf)
+        n, err := w.Write(bufs)
         total += int64(n)
         if err != nil {
             return total, err
@@ -64,7 +66,7 @@ func (c *Command) WriteTo(w io.Writer) (int, error) {
 }
 
 func Ping() *Command {
-    return &Command {Name: []byte("ping"), nil, nil}
+    return &Command {[]byte("ping"), nil, nil}
 }
 
 func Identify(js map[string]interface{}) (*Command, error) {
@@ -81,7 +83,7 @@ func Register(files []string)(*Command) {
     fileConcat = strings.Join(files, "+")
     fileBuf = []byte(fileConcat)
 
-    return &Command{"REGISTER", nil, fileBuf}
+    return &Command{[]byte("REGISTER"), nil, fileBuf}
 }
 
 func UnRegister(files []string)(*Command) {
@@ -91,12 +93,12 @@ func UnRegister(files []string)(*Command) {
 
     fileConcat = strings.Join(files, "+")
     fileBuf = []byte(fileConcat)
-    return &Command{"UNREGISTER", nil, fileBuf}
+    return &Command{[]byte("UNREGISTER"), nil, fileBuf}
 }
 
 func Load(load []byte) *Command {
 
-    return &Command{[]byte("LOAD"), nil, body}
+    return &Command{[]byte("LOAD"), nil, load}
 }
 
 

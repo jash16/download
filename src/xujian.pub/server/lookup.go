@@ -3,7 +3,10 @@ package server
 import (
     "os"
     "time"
+    "bytes"
+    "encoding/json"
     "xujian.pub/common"
+    "xujian.pub/common/version"
 )
 
 type FileChange struct {
@@ -23,9 +26,9 @@ func (s *Server)lookupLoop() {
         lp := NewlookupPeer(addr, func(lp *lookupPeer){
             ci := make(map[string]interface{})
             ci["hostname"] = hostname
-            ci["tcp_address"] = n.Opts.TCPAddress
-            ci["http_address"] = n.Opts.HttpAddress
-            ci["version"] = common.ServerVersion
+            ci["tcp_address"] = s.Opts.TCPAddress
+            ci["http_address"] = s.Opts.HttpAddress
+            ci["version"] = version.ServerVersion
 
             cmd, err := common.Identify(ci)
             if err != nil {
@@ -34,15 +37,15 @@ func (s *Server)lookupLoop() {
             }
             resp, err := lp.Command(cmd)
             if err != nil {
-                n.logf("lookup(%s): error %s - %s", lp, cmd, err)
+                s.logf("lookup(%s): error %s - %s", lp, cmd, err)
             } else if bytes.Equal(resp, []byte("E_INVALID")) {
-                n.logf("lookup(%s): lookup return %s", resp)
+                s.logf("lookup(%s): lookup return %s", resp)
             } else {
                 err := json.Unmarshal(resp, lp.Info)
                 if err != nil {
-                    n.logf("lookup(%s): error parse lookup-server response")
+                    s.logf("lookup(%s): error parse lookup-server response")
                 } else {
-                    n.logf("lookup(%s): lookup-server info: %+v", lp.Info)
+                    s.logf("lookup(%s): lookup-server info: %+v", lp.Info)
                 }
             }
 
@@ -52,7 +55,7 @@ func (s *Server)lookupLoop() {
         })
 
         lp.Command(nil)
-        n.lookupPeers = append(n.lookupPeers, lp)
+        s.lookupPeers = append(s.lookupPeers, lp)
     }
 
     ticker := time.Tick(15 * time.Second)
@@ -64,7 +67,7 @@ func (s *Server)lookupLoop() {
                 cmd := common.Ping()
                 _, err := lp.Command(cmd)
                 if err != nil {
-                    n.logf("lookupd(%s): error %s - %s", lp, cmd, err)
+                    s.logf("lookupd(%s): error %s - %s", lp, cmd, err)
                 }
             }
         case lp := <- syncLocalFileChan:
@@ -76,8 +79,8 @@ func (s *Server)lookupLoop() {
             }
 
         case <- loadTicker:
-            var pload peerLoad
-            var cmd common.Command
+            var pload *peerLoad
+            var cmd *common.Command
 
             pload = s.getLoad()
             ploadBuf, err := json.Marshal(pload)
@@ -93,24 +96,27 @@ func (s *Server)lookupLoop() {
                 }
             }
         case val := <- s.notifyChan:
-            var cmd common.Command
+            var cmd *common.Command
             var typ int32
             var files []string
-            switch(val.(type)) {
+
+            switch val.(type) {
             case *FileChange:
                 typ = val.(*FileChange).typ
                 files = []string{val.(*FileChange).file}
 
                 switch (typ) {
                 case ADD:
-                    cmd = common.Rigister(files)
+                    cmd = common.Register(files)
                 case DEL:
-                    cmd = common.UnRigister(files)
+                    cmd = common.UnRegister(files)
                 }
             }
-            _, err := lp.Command(cmd)
-            if err != nil {
-                n.logf("lookupd(%s) error: %s - %s", lp, cmd, err)
+            for _, lp := range(s.lookupPeers) {
+                _, err := lp.Command(cmd)
+                if err != nil {
+                    s.logf("lookupd(%s) error: %s - %s", lp, cmd, err)
+                }
             }
         case <- s.exitChan:
             goto exit

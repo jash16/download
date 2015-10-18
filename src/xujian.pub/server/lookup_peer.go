@@ -1,9 +1,11 @@
 package server
 
 import (
-    "fmt"
+    _"fmt"
     "net"
     "time"
+    "xujian.pub/proto"
+    "xujian.pub/common"
 )
 
 const (
@@ -76,7 +78,7 @@ func (l *lookupPeer) Close() error {
     return l.conn.Close()
 }
 
-func (l *lookupPeer) Command(cmd *common.Command) ([]byte, error) {
+func (lp *lookupPeer) Command(cmd *common.Command) ([]byte, error) {
     state := lp.state
     //init or reconnect
     if lp.state != stateConnected {
@@ -85,9 +87,9 @@ func (l *lookupPeer) Command(cmd *common.Command) ([]byte, error) {
             return nil, err
         }
         lp.state = stateConnected
-        lp.Write("  V1")
+        lp.Write([]byte("  V1"))
         if state == stateDisconnected {
-            l.connectCallback(l)
+            lp.connectCallback(lp)
         }
     }
 
@@ -95,15 +97,15 @@ func (l *lookupPeer) Command(cmd *common.Command) ([]byte, error) {
         return nil, nil
     }
 
-    _, err := cmd.WriteTo(l)
+    _, err := cmd.WriteTo(lp)
     if err != nil {
-        l.Close()
+        lp.Close()
         return nil, err
     }
 
-    data, err := proto.ReadResponse(l)
+    data, err := proto.ReadResponse(lp)
     if err != nil {
-        l.Close()
+        lp.Close()
         return nil, err
     }
     return data, nil

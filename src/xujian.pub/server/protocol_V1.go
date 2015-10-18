@@ -31,7 +31,7 @@ func (p *protocolV1) IOLoop(conn net.Conn) error {
     var err error
     client := NewClient(conn, p.ctx)
     p.ctx.s.Lock()
-    p.CurClientNum ++;
+    p.ctx.s.CurClientNum ++;
     p.ctx.s.Unlock()
     for {
         //client.conn.SetReadDeadline(time.Now().Add(5 * time.Second))
@@ -55,7 +55,7 @@ func (p *protocolV1) IOLoop(conn net.Conn) error {
     }
     client.conn.Close()
     p.ctx.s.Lock()
-    p.CurClientNum --
+    p.ctx.s.CurClientNum --
     p.ctx.s.Unlock()
     client.ctx.s.logf("client[addr: %s] quit now", client.Addr)
     return err

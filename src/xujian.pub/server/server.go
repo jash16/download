@@ -10,6 +10,8 @@ import (
     "net"
     "sync"
     "fmt"
+    "path/filepath"
+    "strings"
 )
 
 type Server struct {
@@ -125,6 +127,7 @@ func (s *Server) LocalFiles() []string {
             basename := strings.TrimPrefix(path, root)
             files = append(files, basename)
         }
+        return nil
     })
 
     return files
@@ -248,10 +251,10 @@ func (s *Server) DeleteMetaCache(file string) {
     delete(s.md5Cache, file)
 }
 
-func (s *Server)notifyFileChange(typ int32, filename string) {
+func (s *Server)notifyFileChange(typ int, filename string) {
     fc := &FileChange {
-        typ: typ,
-        file: filename
+        typ: int32(typ),
+        file: filename,
     }
     s.notifyChan <- fc
     return
