@@ -9,7 +9,13 @@ type LookupProtocolV1 struct {
 }
 
 func (l *LookupProtocolV1)IOLoop(conn net.Conn) error {
+    client := NewClientV1(conn)
 
+    for {
+        
+    }
+
+    return nil
 }
 
 
