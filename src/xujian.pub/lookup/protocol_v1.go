@@ -48,7 +48,7 @@ func (l *LookupProtocolV1)IOLoop(conn net.Conn) error {
     p.ctx.s.logf("closing client(%s)", client)
     //client may download client or server
     if client.peerInfo != nil {
-        
+        p.ctx.s.Hold.RemoveProducer(client.peerInfo)
     }
     client.Close()
     return err
@@ -126,10 +126,91 @@ func (p *LookupProtocolV1) Identify(client *ClientV1, reader *bufio.Reader, para
         os.Exit(1)
     }
     data["hostname"] = hostname
-
+    data["tcp_address"] = l.ctx.s.Opts.TcpAddress
     buf, err := json.Marshal(data)
     if err != nil {
         return []byte("OK"), nil
     }
     return buf, nil
+}
+
+func (p *LookupProtocolV1) Register(client *ClientV1, reader *bufio.Reader, params []string) {
+    var buf []byte
+    var bodyLen int32
+
+    err := binary.Read(reader, binary.BigEdian, &bodyLen)
+    if err != nil {
+        return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("REGISTER failed"))
+    }
+    buf = make([]byte, bodyLen)
+    _, err := io.ReadFull(reader, buf)
+    if err != nil {
+        return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("REGISTER failed"))
+    }
+
+    files := strings.Split(buf, "+")
+    for _, file := range files {
+        p.ctx.s.Hold.AddProducers(file, client.peerInfo)
+    }
+    return []byte("OK"), nil
+}
+
+func (p *LookupProtocolV1) UnResigter(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error) {
+    var buf []byte
+    var bodyLen int32
+    var err error
+
+    err = binary.Read(reader, binary.BigEdian, &bodyLen)
+    if err != nil {
+        return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("UNREGISTER failed"))
+    }
+
+    buf = make([]byte, bodyLen)
+    _, err = io.ReadFull(reader, buf)
+    if err != nil {
+        return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("UNREGISTER failed"))
+    }
+
+    files := strings.Split(buf, "+")
+
+    for _, file := range(files) {
+        p.ctx.s.Hold.RemoveFileProducer(file, client.peerInfo)
+    }
+
+    return []byte("OK"), nil
+}
+
+func (p *LookupProtocolV1) Load(client *ClientV1, reader *bufio.Reader, params []string)() {
+    var buf []byte
+    var bodyLen int32
+    var err error
+
+    err = binary.Read(reader, binary.BigEdian, &bodyLen)
+    if err != nil {
+        return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("LOAD failed"))
+    }
+
+    buf = make([]byte, bodyLen)
+    _, err = io.ReadFull(reader, buf)
+    if err != nil {
+        return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("LOAD failed"))
+    }
+
+    //client.peerInfo.UpdateLoad()
+    return []byte("OK"), nil
+}
+
+func (p *LookupProtocolV1) Lookup(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error){
+    file := params[0]
+
+    producer := p.ctx.s.Hold.FindProperProducer(file)
+    if producer == nil {
+        return []byte("E_NOT_FOUND"), nil
+    }
+
+    pbuf, err := json.Marshal(producer.peerInfo)
+    if err != nil {
+        return nil, proto.NewFatalClientErr(err, "E_INTERNAL_ERROR", fmt.Sprintf("LOOKUP failed"))
+    }
+    return pbuf, nil
 }
