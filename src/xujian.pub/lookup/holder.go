@@ -1,6 +1,7 @@
 package lookup
 
 import (
+    "fmt"
     "time"
     "sync"
 )
@@ -31,19 +32,18 @@ type Producers []*Producer
 
 func NewHolderDB() *HolderDB {
     return &HolderDB {
-        HolderMap: make(map[string]Producers)
+        HoldMap: make(map[string]Producers),
     }
 }
 
-func (h *HolderDB) AddProducer(file string, peerInfo *PeerInfo) {
+func (h *HolderDB) AddProducer(file string, peerInfo *PeerInfo) error {
     h.Lock()
     defer h.Unlock()
 
     var found bool
     producer := &Producer{
-        peerInfo: peerInfo
-        pasued: false,
-        pasuedTime:nil
+        peerInfo: peerInfo,
+        paused: false,
     }
     producers, ok := h.HoldMap[file]
     if ok {
@@ -59,6 +59,7 @@ func (h *HolderDB) AddProducer(file string, peerInfo *PeerInfo) {
         producers := Producers{}
         h.HoldMap[file] = append(producers, producer)
     }
+    return nil
 }
 
 func (h *HolderDB) FindProducers(file string) Producers {
@@ -101,7 +102,11 @@ func (h *HolderDB) RemoveFileProducer(file string, peerInfo *PeerInfo) error {
     }
 
     if found == true {
-        s.HoldMap[file] = cleaned
+        if len(cleaned) == 0{
+            delete(h.HoldMap, file)
+        } else {
+            h.HoldMap[file] = cleaned
+        }
     }
 
     return nil
@@ -114,15 +119,26 @@ func (h *HolderDB) RemoveProducer(peerInfo *PeerInfo) error {
     cleaned := Producers{}
 
     for file, producers := range(h.HoldMap) {
+        cleaned = Producers{}
         for _, producer := range(producers) {
             if peerInfo.id != producer.peerInfo.id {
                 cleaned = append(cleaned, producer)
             }
         }
 
-        h.HoldMap[file] = cleaned
+        if len(cleaned) == 0 {
+            delete(h.HoldMap, file)
+        } else {
+            h.HoldMap[file] = cleaned
+        }
     }
     return nil
 }
 
-
+func (pp Producers)PeerInfo() ([]*PeerInfo) {
+    var peerInfos []*PeerInfo
+    for _, producer := range pp {
+        peerInfos = append(peerInfos, producer.peerInfo)
+    }
+    return peerInfos
+}

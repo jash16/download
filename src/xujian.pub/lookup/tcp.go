@@ -3,7 +3,8 @@ package lookup
 import (
     "net"
     "io"
-    "xujian.pub/common"
+ _   "xujian.pub/common"
+    "xujian.pub/proto"
 )
 
 type tcpServer struct {
@@ -24,7 +25,7 @@ func (p *tcpServer) Handle(conn net.Conn) {
     var protocol proto.Protocol
     switch(protoMagic) {
     case "  V1":
-        protocol = LookupProtocolV1{ctx: p.ctx}
+        protocol = &LookupProtocolV1{ctx: p.ctx}
     default:
         proto.SendResponse(conn, []byte("E_BAD_PROTOCOL"))
         p.ctx.s.logf("client(%s) wrong protocol: %s", conn.RemoteAddr(), protoMagic)
@@ -32,7 +33,7 @@ func (p *tcpServer) Handle(conn net.Conn) {
         return
     }
 
-    err := protocol.IOLoop(conn)
+    err = protocol.IOLoop(conn)
     if err != nil {
         p.ctx.s.logf("client(%s) error - %s", conn.RemoteAddr(), err)
         return

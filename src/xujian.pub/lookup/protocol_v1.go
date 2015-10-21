@@ -3,8 +3,11 @@ package lookup
 import (
     "os"
     "net"
+    "io"
+    "time"
     "fmt"
-    "json"
+    "encoding/binary"
+    "encoding/json"
     "bufio"
     "sync/atomic"
     "strings"
@@ -15,15 +18,15 @@ type LookupProtocolV1 struct {
     ctx *context
 }
 
-func (l *LookupProtocolV1)IOLoop(conn net.Conn) error {
+func (p *LookupProtocolV1)IOLoop(conn net.Conn) error {
     var err error
-    var line string
+    //var line string
 
     err = nil
     client := NewClientV1(conn)
     reader := bufio.NewReader(conn)
     for {
-        line, err := reader.ReadString("\n")
+        line, err := reader.ReadString('\n')
         if err != nil {
             break
         }
@@ -54,8 +57,8 @@ func (l *LookupProtocolV1)IOLoop(conn net.Conn) error {
     return err
 }
 
-func (p *LookupProtocolV1)Exec(client *Client, reader *bufio.Reader, params []string) ([]byte, error){
-    cmd := param[0]
+func (p *LookupProtocolV1)Exec(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error){
+    cmd := params[0]
     switch(cmd) {
     case "IDENTIFY":
         return p.Identify(client, reader, params[1:])
@@ -97,17 +100,17 @@ func (p *LookupProtocolV1) Identify(client *ClientV1, reader *bufio.Reader, para
     var bodyLen int32
     err = binary.Read(reader, binary.BigEndian, &bodyLen)
     if err != nil {
-        return nil, proto.NewFataClientErr(err, "E_BAD_BODY", fmt.Sprintf("IDENTIFY failed"))
+        return nil, proto.NewFatalClientErr(err, "E_BAD_BODY", fmt.Sprintf("IDENTIFY failed"))
     }
 
-    buf := make([]byte, bodyLen)
-    n, err := io.ReadFull(reader, buf)
+    buf = make([]byte, bodyLen)
+    _, err = io.ReadFull(reader, buf)
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_BAD_BODY", fmt.Sprintf("IDENTIFY failed"))
     }
 
     peerInfo := PeerInfo {id: client.RemoteAddr().String()}
-    err := json.Unmarshal(buf, &peerInfo)
+    err = json.Unmarshal(buf, &peerInfo)
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_BAD_BODY", fmt.Sprintf("IDENTIFY failed"))
     }
@@ -115,7 +118,7 @@ func (p *LookupProtocolV1) Identify(client *ClientV1, reader *bufio.Reader, para
     peerInfo.RemoteAddr = client.RemoteAddr().String()
 
     tnow := time.Now().Unix()
-    atomic.StoreInt64(&peerInfo.lastActive)
+    atomic.StoreInt64(&peerInfo.lastActive, tnow)
 
     client.peerInfo = &peerInfo
 
@@ -126,41 +129,41 @@ func (p *LookupProtocolV1) Identify(client *ClientV1, reader *bufio.Reader, para
         os.Exit(1)
     }
     data["hostname"] = hostname
-    data["tcp_address"] = l.ctx.s.Opts.TcpAddress
-    buf, err := json.Marshal(data)
+    data["tcp_address"] = p.ctx.s.Opts.TcpAddress
+    buf, err = json.Marshal(data)
     if err != nil {
         return []byte("OK"), nil
     }
     return buf, nil
 }
 
-func (p *LookupProtocolV1) Register(client *ClientV1, reader *bufio.Reader, params []string) {
+func (p *LookupProtocolV1) Register(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error){
     var buf []byte
     var bodyLen int32
 
-    err := binary.Read(reader, binary.BigEdian, &bodyLen)
+    err := binary.Read(reader, binary.BigEndian, &bodyLen)
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("REGISTER failed"))
     }
     buf = make([]byte, bodyLen)
-    _, err := io.ReadFull(reader, buf)
+    _, err = io.ReadFull(reader, buf)
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("REGISTER failed"))
     }
 
-    files := strings.Split(buf, "+")
+    files := strings.Split(string(buf), "+")
     for _, file := range files {
-        p.ctx.s.Hold.AddProducers(file, client.peerInfo)
+        p.ctx.s.Hold.AddProducer(file, client.peerInfo)
     }
     return []byte("OK"), nil
 }
 
-func (p *LookupProtocolV1) UnResigter(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error) {
+func (p *LookupProtocolV1) UnRegister(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error) {
     var buf []byte
     var bodyLen int32
     var err error
 
-    err = binary.Read(reader, binary.BigEdian, &bodyLen)
+    err = binary.Read(reader, binary.BigEndian, &bodyLen)
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("UNREGISTER failed"))
     }
@@ -171,7 +174,7 @@ func (p *LookupProtocolV1) UnResigter(client *ClientV1, reader *bufio.Reader, pa
         return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("UNREGISTER failed"))
     }
 
-    files := strings.Split(buf, "+")
+    files := strings.Split(string(buf), "+")
 
     for _, file := range(files) {
         p.ctx.s.Hold.RemoveFileProducer(file, client.peerInfo)
@@ -180,12 +183,12 @@ func (p *LookupProtocolV1) UnResigter(client *ClientV1, reader *bufio.Reader, pa
     return []byte("OK"), nil
 }
 
-func (p *LookupProtocolV1) Load(client *ClientV1, reader *bufio.Reader, params []string)() {
+func (p *LookupProtocolV1) Load(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error){
     var buf []byte
     var bodyLen int32
     var err error
 
-    err = binary.Read(reader, binary.BigEdian, &bodyLen)
+    err = binary.Read(reader, binary.BigEndian, &bodyLen)
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("LOAD failed"))
     }
@@ -213,4 +216,24 @@ func (p *LookupProtocolV1) Lookup(client *ClientV1, reader *bufio.Reader, params
         return nil, proto.NewFatalClientErr(err, "E_INTERNAL_ERROR", fmt.Sprintf("LOOKUP failed"))
     }
     return pbuf, nil
+}
+
+func (p *LookupProtocolV1) LookupAll(client *ClientV1, reader *bufio.Reader, params []string) ([]byte, error) {
+    file := params[0]
+    producers := p.ctx.s.Hold.FindProducers(file)
+    if producers == nil {
+        return []byte("E_NOT_FOUND"), nil
+    }
+
+    data, err := json.Marshal(struct {
+        File string
+        Data interface{}
+    }{
+        File: file,
+        Data: producers.PeerInfo(),
+    })
+    if err != nil {
+        return []byte("E_NOT_FOUND"), nil
+    }
+    return data, nil
 }

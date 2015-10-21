@@ -1,6 +1,7 @@
-package server
+package lookup
 
 import (
+    "os"
     "log"
     "time"
     "xujian.pub/common"
@@ -18,6 +19,6 @@ func NewLookupOptions() *LookupOptions {
         TcpAddress: ":6790",
         HttpAddress: ":6791",
         InteractiveTimeout: 300*time.Second,
-        Logger: log.New(os.Stderr, "MyLookup", log.Ldate|log.Ltime|log.Lmicroseconds)
+        Logger: log.New(os.Stderr, "[MyLookup]", log.Ldate|log.Ltime|log.Lmicroseconds),
     }
 }

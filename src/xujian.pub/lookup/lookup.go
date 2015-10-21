@@ -3,9 +3,10 @@ package lookup
 import (
     "os"
     "net"
+    "fmt"
     "sync"
     "xujian.pub/proto"
-    "xujian.pub/common"
+    _ "xujian.pub/common"
     "xujian.pub/common/util"
 )
 
@@ -16,7 +17,7 @@ type LookupServer struct {
     tcpListener net.Listener
     httpListener net.Listener
 
-    Hold HolderDB
+    Hold *HolderDB
     wg util.WaitGroupWrapper
 
     exitChan chan bool
@@ -26,7 +27,7 @@ func NewLookupServer(opt *LookupOptions) *LookupServer {
     return &LookupServer {
         Opts: opt,
         exitChan: make(chan bool),
-        Holder: NewHolderDB(),
+        Hold: NewHolderDB(),
     }
 }
 
