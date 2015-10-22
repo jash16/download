@@ -9,6 +9,13 @@ import (
     "xujian.pub/common"
 )
 
+func init() {
+    println("init 1")
+}
+
+func init() {
+    println("init 2")
+}
 func main() {
     data := []byte("hello xujian")
     md5data := fmt.Sprintf("%x\n", md5.Sum(data))

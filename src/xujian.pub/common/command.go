@@ -66,7 +66,7 @@ func (c *Command) WriteTo(w io.Writer) (int64, error) {
 }
 
 func Ping() *Command {
-    return &Command {[]byte("ping"), nil, nil}
+    return &Command {[]byte("PING"), nil, nil}
 }
 
 func Identify(js map[string]interface{}) (*Command, error) {
@@ -101,5 +101,6 @@ func Load(load []byte) *Command {
     return &Command{[]byte("LOAD"), nil, load}
 }
 
-
-
+func Lookup(file string) *Command {
+    return &Command{[]byte("LOOKUP"), [][]byte{[]byte(file)}, nil}
+}

@@ -12,6 +12,8 @@ import (
     "fmt"
     "path/filepath"
     "strings"
+    "github.com/shirou/gopsutil/mem"
+    "github.com/shirou/gopsutil/cpu"
 )
 
 type Server struct {
@@ -261,5 +263,18 @@ func (s *Server)notifyFileChange(typ int, filename string) {
 }
 
 func (s *Server)getLoad() *peerLoad {
-    return &peerLoad {}
+    v, _ := mem.VirtualMemory()
+    musage := v.UsedPercent
+
+    c, _ := cpu.CPUPercent(time.Second, false)
+    cusage := c[0]*100
+
+    s.RLock()
+    clientNum := s.ClientNum
+    s.RUnlock()
+    return &peerLoad {
+        ClientNum: clientNum,
+        CpuUsage: cusage,
+        MemUsage: musage,
+    }
 }

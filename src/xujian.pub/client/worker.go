@@ -29,6 +29,7 @@ type downConn struct {
 
 type worker struct {
     reqConn *net.TCPConn
+    SrvAddr string
     r io.Reader
     w io.Writer
     file string
@@ -40,13 +41,13 @@ type worker struct {
     reloadChan chan reloadPkg
 }
 
-func NewdownConn(client *Client) *downConn {
+func NewdownConn(w *worker) *downConn {
     dialer := &net.Dialer {
         Timeout: 5 * time.Second,
     }
-    conn, err := dialer.Dial("tcp", client.Opts.ServerAddr)
+    conn, err := dialer.Dial("tcp", w.SrvAddr)
     if err != nil {
-        client.logf("[FATAL] client dial: %s failed, quit now", client.Opts.ServerAddr)
+        w.client.logf("[FATAL] client dial: %s failed, quit now", w.SrvAddr)
         return nil
     }
     tcpConn := conn.(*net.TCPConn)
@@ -59,18 +60,30 @@ func NewdownConn(client *Client) *downConn {
 
 func Newworker(file string, client *Client) *worker{
     client.logf("new workers")
+
+    addr := client.Opts.ServerAddr
+    if addr == "" {
+        peerInfo, err := GetPeerInfo(file, client.Opts.LookupAddr)
+        if err != nil {
+            client.logf("[Fatal] get download server failed: %s", err)
+            os.Exit(1)
+        }
+        addr = peerInfo.TcpAddr
+    }
+
     dialer := &net.Dialer {
         Timeout: 5 * time.Second,
     }
-    conn, err := dialer.Dial("tcp", client.Opts.ServerAddr)
+    conn, err := dialer.Dial("tcp", addr)
     if err != nil {
-       client.logf("[FATAL] client dial: %s failed, quit now", client.Opts.ServerAddr)
+       client.logf("[FATAL] client dial: %s failed, quit now", addr)
        os.Exit(1)
     }
     tcpConn := conn.(*net.TCPConn)
 
     return &worker {
         reqConn: tcpConn,
+        SrvAddr: addr,
         r: tcpConn,
         w: tcpConn,
         file: file,
@@ -128,7 +141,7 @@ func (w *worker) StartDownload() {
         }
 
         w.client.wg.Wrap(func(){
-            dconn := NewdownConn(w.client)
+            dconn := NewdownConn(w)
             if dconn == nil {
                 w.client.logf("new downConn failed")
                 os.Exit(1)

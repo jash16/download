@@ -39,13 +39,13 @@ func (s *Server)lookupLoop() {
             if err != nil {
                 s.logf("lookup(%s): error %s - %s", lp, cmd, err)
             } else if bytes.Equal(resp, []byte("E_INVALID")) {
-                s.logf("lookup(%s): lookup return %s", resp)
+                s.logf("lookup(%s): lookup return %s", lp, resp)
             } else {
-                err := json.Unmarshal(resp, lp.Info)
+                err := json.Unmarshal(resp, &lp.Info)
                 if err != nil {
-                    s.logf("lookup(%s): error parse lookup-server response")
+                    s.logf("lookup(%s): error parse lookup-server response: %s", lp, string(resp))
                 } else {
-                    s.logf("lookup(%s): lookup-server info: %+v", lp.Info)
+                    s.logf("lookup(%s): lookup-server info: %+v", lp, lp.Info)
                 }
             }
 

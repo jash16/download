@@ -27,18 +27,19 @@ type lookupPeer struct {
 }
 
 type peerInfo struct {
-    TCPPort          int    `json:"tcp_port"`
-    HTTPPort         int    `json:"http_port"`
-    MemTotal         int64  `json:"mem_total"`
-    CpuTotal         int64  `json:"cpu_total"`
-    Version          string `json:"version"`
-    BroadcastAddress string `json:"broadcast_address"`
+    TCPPort          string    `json:"tcp_address"`
+    //HTTPPort         int    `json:"http_address"`
+    Hostname         string    `json:"hostname"`
+    //MemTotal         int64  `json:"mem_total"`
+    //CpuTotal         int64  `json:"cpu_total"`
+    //Version          string `json:"version"`
+    //BroadcastAddress string `json:"broadcast_address"`
 }
 
 type peerLoad struct {
-    ClientNum  int `json:"client_num"`
-    CpuUsage   float32 `json:"cpu_usage"`
-    MemUsage   float32 `json:"mem_usage"`
+    ClientNum  int64 `json:"client_num"`
+    CpuUsage   float64 `json:"cpu_usage"`
+    MemUsage   float64 `json:"mem_usage"`
 }
 
 func NewlookupPeer(addr string, callback func(*lookupPeer)) *lookupPeer {

@@ -1,5 +1,5 @@
 package client
 
 type BackendWork interface {
-    Put(start int64, data []byte) error
+    Process(start, end int64, file string, data []byte) error
 }

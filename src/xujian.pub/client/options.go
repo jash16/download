@@ -11,6 +11,7 @@ type ClientOption struct {
     Version    bool
     Verbose    bool
     ServerAddr string `host:port`
+    LookupAddr string
     Files  []string
     SaveDir string
     RoutingNum int64

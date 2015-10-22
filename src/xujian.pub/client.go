@@ -16,7 +16,8 @@ import (
 var (
     ver = flag.Bool("version", false, "print version")
     verbose = flag.Bool("verbose", false, "enable verbose logging")
-    serverAddr = flag.String("server-tcp-address", "0.0.0.0:6789", "server tcp address")
+    serverAddr = flag.String("server-tcp-address", "", "server tcp address")
+    lookupAddr = flag.String("lookup-tcp-address", "", "lookup server tcp address")
     file = flag.String("download-files", "", "download file name, use ';' seperate, a.txt;b.txt")
     maxWait = flag.Duration("max-wait-time", 60*time.Second, "max time wait server send data")
     routings = flag.Int64("routing-num", 10, "routings per file")
@@ -37,7 +38,21 @@ func main() {
         fmt.Printf("download file is null, quit\n")
         os.Exit(1)
     }
-    opt.ServerAddr = *serverAddr
+
+    if *serverAddr != "" && *lookupAddr != "" {
+        fmt.Printf("Only can set lookup-tcp-address or server-tcp-address\n")
+        os.Exit(1)
+    }
+    if serverAddr != nil {
+        opt.ServerAddr = *serverAddr
+    }
+    if lookupAddr != nil {
+        opt.LookupAddr = *lookupAddr
+    }
+    if opt.ServerAddr == "" && opt.LookupAddr == "" {
+        fmt.Printf("Must set server-tcp-address or lookup-tcp-address\n")
+        os.Exit(1)
+    }
     opt.MaxWait    = *maxWait
     opt.RoutingNum = *routings
     opt.BlockSize  = *blockSize

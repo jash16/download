@@ -115,7 +115,7 @@ func (p *LookupProtocolV1) Identify(client *ClientV1, reader *bufio.Reader, para
         return nil, proto.NewFatalClientErr(err, "E_BAD_BODY", fmt.Sprintf("IDENTIFY failed"))
     }
 
-    peerInfo.RemoteAddr = client.RemoteAddr().String()
+    //peerInfo.RemoteAddr = client.RemoteAddr().String()
 
     tnow := time.Now().Unix()
     atomic.StoreInt64(&peerInfo.lastActive, tnow)
@@ -134,6 +134,7 @@ func (p *LookupProtocolV1) Identify(client *ClientV1, reader *bufio.Reader, para
     if err != nil {
         return []byte("OK"), nil
     }
+    p.ctx.s.logf("client: %s identify success", client)
     return buf, nil
 }
 
@@ -155,6 +156,7 @@ func (p *LookupProtocolV1) Register(client *ClientV1, reader *bufio.Reader, para
     for _, file := range files {
         p.ctx.s.Hold.AddProducer(file, client.peerInfo)
     }
+    p.ctx.s.logf("client %s REGISTER %s", client, buf)
     return []byte("OK"), nil
 }
 
@@ -180,6 +182,7 @@ func (p *LookupProtocolV1) UnRegister(client *ClientV1, reader *bufio.Reader, pa
         p.ctx.s.Hold.RemoveFileProducer(file, client.peerInfo)
     }
 
+    p.ctx.s.logf("client %s UNREGISTER file: %s", client, buf)
     return []byte("OK"), nil
 }
 
@@ -199,6 +202,7 @@ func (p *LookupProtocolV1) Load(client *ClientV1, reader *bufio.Reader, params [
         return nil, proto.NewFatalClientErr(err, "E_INVALID_BODY", fmt.Sprintf("LOAD failed"))
     }
 
+    p.ctx.s.logf("client: %s, load: %s", client, buf)
     //client.peerInfo.UpdateLoad()
     return []byte("OK"), nil
 }

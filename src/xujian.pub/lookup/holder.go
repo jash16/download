@@ -15,10 +15,10 @@ type PeerInfo struct {
     lastActive int64
     id string
 
-    RemoteAddr string `flag:"remote-address"`
+    //RemoteAddr string `flag:"remote-address"`
     Hostname string `flag:"hostname"`
-    TcpAddress string `flag:"tcp-address"`
-    HttpAddress string `flag:"http-address"`
+    TcpAddress string `flag:"tcp_address"`
+    HttpAddress string `flag:"http_address"`
     Version string `flag:"version"`
 }
 

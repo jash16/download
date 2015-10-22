@@ -4,6 +4,7 @@ import (
     "xujian.pub/common/version"
     "xujian.pub/server"
     "fmt"
+    "strings"
     "flag"
     "os"
     "os/signal"
@@ -35,6 +36,7 @@ var (
     verbose = flag.Bool("verbose", false, "enable verbose logging")
     tcpaddr = flag.String("tcp-address", "0.0.0.0:6789", "<addr>:<port> to listen")
 
+    lookupTcpAddr = flag.String("lookup-tcp-address", "", "<addr>:<port> lookup tcp address, to connect")
     datapath = flag.String("data-path", "/data/download", "path where the data store")
 
     client_timeout = flag.Duration("client-timeout", 60 * time.Second, "client timeout")
@@ -68,6 +70,9 @@ func main() {
         opt.MaxClients = *max_client
     }
 
+    if lookupTcpAddr != nil {
+        opt.LookupSrvAddrs = strings.Split(*lookupTcpAddr, ",")
+    }
     if *cached {
         opt.Cached = *cached
     }
