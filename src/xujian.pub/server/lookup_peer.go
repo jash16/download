@@ -27,9 +27,9 @@ type lookupPeer struct {
 }
 
 type peerInfo struct {
-    TCPPort          string    `json:"tcp_address"`
-    //HTTPPort         int    `json:"http_address"`
-    Hostname         string    `json:"hostname"`
+    TcpAddress          string    `json:"tcp_address"`
+    HttpAddress         string    `json:"http_address"`
+    Hostname            string    `json:"hostname"`
     //MemTotal         int64  `json:"mem_total"`
     //CpuTotal         int64  `json:"cpu_total"`
     //Version          string `json:"version"`

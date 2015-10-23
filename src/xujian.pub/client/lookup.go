@@ -26,6 +26,10 @@ func GetPeerInfo(file string, addr string) (*PeerInfo , error){
     if err != nil {
         return nil, err
     }
+    _, err = conn.Write([]byte("  V1"))
+    if err != nil {
+        return nil, err
+    }
     cmd := common.Lookup(file)
     _, err = cmd.WriteTo(conn)
     if err != nil {
@@ -33,9 +37,10 @@ func GetPeerInfo(file string, addr string) (*PeerInfo , error){
     }
     resp, err := proto.ReadResponse(conn)
     if err != nil {
+        println("receive error  response")
         return nil, err
     }
-
+    println(string(resp))
     err = json.Unmarshal(resp, peerInfo)
     if err != nil {
         return nil, err

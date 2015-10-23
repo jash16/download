@@ -29,7 +29,7 @@ func (s *Server)lookupLoop() {
             ci["tcp_address"] = s.Opts.TCPAddress
             ci["http_address"] = s.Opts.HttpAddress
             ci["version"] = version.ServerVersion
-
+            s.logf("register: %+v", ci)
             cmd, err := common.Identify(ci)
             if err != nil {
                 lp.Close()

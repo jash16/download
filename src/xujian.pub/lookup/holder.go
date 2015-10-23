@@ -16,10 +16,10 @@ type PeerInfo struct {
     id string
 
     //RemoteAddr string `flag:"remote-address"`
-    Hostname string `flag:"hostname"`
-    TcpAddress string `flag:"tcp_address"`
-    HttpAddress string `flag:"http_address"`
-    Version string `flag:"version"`
+    Hostname string `json:"hostname"`
+    TcpAddress string `json:"tcp_address"`
+    HttpAddress string `json:"http_address"`
+    Version string `json:"version"`
 }
 
 type Producer struct {

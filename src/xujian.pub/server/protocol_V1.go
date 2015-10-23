@@ -146,7 +146,7 @@ func (p *protocolV1) processBlockRequest (client *Client, file string, start, en
             return
         }
         if len(data) <= 10485760 { // 10M
-            p.ctx.s.logf("add file: %s, data: %s, to cache", file, data)
+            p.ctx.s.logf("add file to cache: %s, data: %s", file, data)
             p.ctx.s.AddDataCache(file, data)
         }
         //p.ctx.s.logf("read data from: %s, data: %s", file, data)

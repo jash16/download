@@ -30,7 +30,7 @@ type MetaCache map[string]*MetaInfo
 func (m MetaCache) ProcessEvent(cev *cacheEvent) error {
     typ := cev.eventType
     file := cev.filename
-    fmt.Printf("get metaInfo modify: %d, %s\n", typ, file)
+    //fmt.Printf("get metaInfo modify: %d, %s\n", typ, file)
     switch(typ) {
     case ADD, MOD:
         md5, err := common.CalFileMd5(file)
@@ -142,7 +142,7 @@ func (c *Cache)ReadData(file string, start, end int64) []byte {
     defer c.Unlock()
     b := c.LookupFile(file)
     if b != nil && b.FileSize >= end {
-        fmt.Printf("file: %s, hit the cache \n", file)
+        //fmt.Printf("file: %s, hit the cache \n", file)
         data := make([]byte, end-start+1)
         copy(data, b.Data[start:end+1])
         c.Hits ++
@@ -168,7 +168,7 @@ func (c *Cache) RemoveBlockByKey(file string) {
     for k, _ := range c.Blocks {
          //if strings.HasSuffix(k, file) {
          if k == file {
-             fmt.Printf("delete file: %s, %s\n", k, file)
+             //fmt.Printf("delete file: %s, %s\n", k, file)
              delete(c.Blocks, file)
          }
     }
@@ -187,11 +187,11 @@ func (c *Cache)ExpireBlockStep() int64 {
 func (c *Cache) ProcessEvent(ev *cacheEvent) error {
     typ := ev.eventType
     file := ev.filename
-    fmt.Printf("get data cache modify: %d, %s\n", typ, ev.filename)
+    //fmt.Printf("get data cache modify: %d, %s\n", typ, ev.filename)
     switch(typ) {
     case MOD:
-        data, err := ioutil.ReadFile(file)
-        fmt.Printf("=============read event: data %s\n", data)
+        _, err := ioutil.ReadFile(file)
+        //fmt.Printf("=============read event: data %s\n", data)
         if err != nil {
             return err
         }
@@ -205,7 +205,7 @@ func (c *Cache) ProcessEvent(ev *cacheEvent) error {
 
 //you should keep start < end 
 func (b *FileBlock)ReadData(start, end int64) []byte {
-    fmt.Printf("start: %d, end: %d, size: %d\n", start, end, b.FileSize)
+    //fmt.Printf("start: %d, end: %d, size: %d\n", start, end, b.FileSize)
     if (start >= 0 && end <= b.FileSize) {
         data := make([]byte, end-start+1)
         copy(data, b.Data[start:end+1])
@@ -215,7 +215,7 @@ func (b *FileBlock)ReadData(start, end int64) []byte {
 }
 
 func (b *FileBlock)SetData(data []byte) {
-    fmt.Printf("set data: %s\n", data)
+    //fmt.Printf("set data: %s\n", data)
     fileSize := len(data)
     b.Data = make([]byte, fileSize)
     b.FileSize = int64(fileSize)

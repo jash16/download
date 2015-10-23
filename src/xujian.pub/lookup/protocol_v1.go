@@ -114,7 +114,7 @@ func (p *LookupProtocolV1) Identify(client *ClientV1, reader *bufio.Reader, para
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_BAD_BODY", fmt.Sprintf("IDENTIFY failed"))
     }
-
+    p.ctx.s.logf("register: %+v", peerInfo)
     //peerInfo.RemoteAddr = client.RemoteAddr().String()
 
     tnow := time.Now().Unix()
@@ -219,6 +219,7 @@ func (p *LookupProtocolV1) Lookup(client *ClientV1, reader *bufio.Reader, params
     if err != nil {
         return nil, proto.NewFatalClientErr(err, "E_INTERNAL_ERROR", fmt.Sprintf("LOOKUP failed"))
     }
+    p.ctx.s.logf("send lookup data: %s", pbuf)
     return pbuf, nil
 }
 
