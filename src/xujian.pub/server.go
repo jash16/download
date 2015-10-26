@@ -44,6 +44,7 @@ var (
 
     cached = flag.Bool("cached", false, "cache some hot data")
     cache_size = flag.Int64("cache-size", 1024*1024, "cache data per slice")
+    cache_timeout = flag.Duration("cache-timeout", 60 * time.Minute, "cache timeout")
     log_file = flag.String("log-file", "", "the file to save the log, if null, output to the stderr")
 )
 
@@ -83,6 +84,10 @@ func main() {
     if log_file != nil {
         opt.LogFile = *log_file
     }
+    if cache_timeout != nil {
+        opt.CacheTimeout = *cache_timeout
+    }
+
     signalChan := make(chan os.Signal, 1)
     signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 

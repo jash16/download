@@ -18,7 +18,7 @@ type ServerOption struct {
     //cache
     Cached bool        `flag:"cached"`
     CachedSize int64   `flag:"cache-size"`
-
+    CacheTimeout time.Duration `flag:cache-timeout`
     //client
     MaxClients int64   `flag:"max-clients"`
     ClientTimeout time.Duration

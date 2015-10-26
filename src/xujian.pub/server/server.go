@@ -58,7 +58,7 @@ func NewServer(opts *ServerOption) *Server {
         DownloadNum: 0,
         DownloadSize: 0,
         md5Cache: make(map[string]*MetaInfo),
-        dataCache: NewCache(1000),
+        dataCache: NewCache(1000, opts.CacheTimeout),
     }
 
     if common.IsFileExist(opts.DataPath) == false {
@@ -66,6 +66,7 @@ func NewServer(opts *ServerOption) *Server {
         os.Exit(-1)
     }
 
+    s.dataCache.ctx = &context{s}
     return s
 }
 
@@ -142,16 +143,16 @@ func (s *Server) cacheLoop() {
     for {
         select {
         case <- expireCache.C:
-            //
+            s.dataCache.ExpireBlockStep()
         case cev := <- s.cacheEventChan:
             //time.Sleep(1 * time.Second)
             s.md5Lock.Lock()
             s.md5Cache.ProcessEvent(cev)
             s.md5Lock.Unlock()
 
-            s.cacheLock.Lock()
+        //    s.cacheLock.Lock()
             s.dataCache.ProcessEvent(cev)
-            s.cacheLock.Unlock()
+        //    s.cacheLock.Unlock()
 
             s.notifyFileChange(cev.eventType, cev.filename)
 

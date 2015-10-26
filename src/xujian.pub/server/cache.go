@@ -6,6 +6,7 @@ import (
     "xujian.pub/common"
     "time"
     "io/ioutil"
+    "github.com/shirou/gopsutil/mem"
     //"errors"
 //    "strings"
 )
@@ -59,6 +60,8 @@ func (m MetaCache) ProcessEvent(cev *cacheEvent) error {
 type FileBlock struct {
     StartTime int64
     LastAccess int64
+    lastFiveAccess []int64
+    lastFiveIdx int
 
     Hits int
 
@@ -74,6 +77,9 @@ type Cache struct {
     CacheSize int64
 
     Expire time.Duration
+    MaxMemUsage float64
+    MinMemUsage float64
+    ctx *context
     maxCacheBlock int64
     Blocks map[string]*FileBlock //key is filename
     sync.RWMutex
@@ -86,17 +92,20 @@ type cacheEvent struct {
 
 func NewBlock() *FileBlock{
     return &FileBlock {
-        LastAccess: time.Now().Unix(),
         Hits: 0,
+        lastFiveAccess: make([]int64, 5),
         FileSize: 0,
     }
 }
 
-func NewCache(maxBlocks int64) *Cache {
+func NewCache(maxBlocks int64, expire time.Duration) *Cache {
     return &Cache {
         Blocks: make(map[string]*FileBlock),
         Hits: 0,
         maxCacheBlock: maxBlocks,
+        Expire: expire,
+        MinMemUsage: 0.30,
+        MaxMemUsage: 0.70,
     }
 }
 
@@ -119,6 +128,17 @@ func (c *Cache)AddOrHitCache(file string, data []byte) error {
     b := c.LookupFile(file)
     if b != nil {
         b.LastAccess = time.Now().Unix()
+        if b.lastFiveIdx == 0 {
+            b.lastFiveAccess[1] = b.lastFiveAccess[0]
+        } else {
+            for i := b.lastFiveIdx; i > 0; i -- {
+                b.lastFiveAccess[i] = b.lastFiveAccess[i-1]
+            }
+            b.lastFiveAccess[0] = b.LastAccess
+        }
+        if b.lastFiveIdx < 4 {
+            b.lastFiveIdx ++
+        }
         return nil
     }
 
@@ -181,6 +201,32 @@ func (c *Cache)ExpireBlock() int64 {
 
 //指定时间内扫描cache
 func (c *Cache)ExpireBlockStep() int64 {
+    c.Lock()
+    defer c.Unlock()
+
+    m, err := mem.VirtualMemory()
+    if err != nil {
+        return int64(0)
+    }
+    //小于最小触发值，return
+    if m.UsedPercent <= c.MinMemUsage {
+        return int64(0)
+    }
+    for file, b := range(c.Blocks) {
+        internal := time.Now().Sub(time.Unix(b.LastAccess, 0))
+        if internal >= c.Expire {
+            c.ctx.s.logf("expire file: %s, %#v", file, b)
+            delete(c.Blocks, file)
+            return int64(1)
+        }
+        if m.UsedPercent >= c.MaxMemUsage {
+            if b.lastFiveIdx != 0 && b.lastFiveAccess[b.lastFiveIdx] - b.lastFiveAccess[0] >= 10 {
+                c.ctx.s.logf("expire file: %s, %#v", file, b)
+                delete(c.Blocks, file)
+                return int64(1)
+            }
+        }
+    }
     return int64(0)
 }
 
@@ -221,6 +267,11 @@ func (b *FileBlock)SetData(data []byte) {
     b.FileSize = int64(fileSize)
     b.Hits = 1
     b.StartTime , b.LastAccess = time.Now().Unix(), time.Now().Unix()
+    for idx, _ := range(b.lastFiveAccess) {
+        b.lastFiveAccess[idx] = 0
+    }
+    b.lastFiveAccess[0] = b.LastAccess
+    b.lastFiveIdx = 0
     copy(b.Data, data)
     return
 }

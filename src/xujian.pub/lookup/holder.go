@@ -20,6 +20,9 @@ type PeerInfo struct {
     TcpAddress string `json:"tcp_address"`
     HttpAddress string `json:"http_address"`
     Version string `json:"version"`
+    cpuUsage float64
+    memUsage float64
+    clientNum int64
 }
 
 type Producer struct {

@@ -65,7 +65,7 @@ func Newworker(file string, client *Client) *worker{
     if addr == "" {
         peerInfo, err := GetPeerInfo(file, client.Opts.LookupAddr)
         if err != nil {
-            client.logf("[Fatal] get download server failed: %s", err)
+            client.logf("[Fatal] get(%s) download server failed: %s", file, err)
             os.Exit(1)
         }
         addr = peerInfo.TcpAddr

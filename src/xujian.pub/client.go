@@ -22,7 +22,7 @@ var (
     maxWait = flag.Duration("max-wait-time", 60*time.Second, "max time wait server send data")
     routings = flag.Int64("routing-num", 10, "routings per file")
     blockSize = flag.Int64("block-size", 1048576, "size per block")
-    saveDir = flag.String("save-dir", "./", "dir to save download file")
+    saveDir = flag.String("save-dir", "/tmp", "dir to save download file")
 )
 
 func main() {
