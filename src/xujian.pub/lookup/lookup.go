@@ -6,7 +6,7 @@ import (
     "fmt"
     "sync"
     "xujian.pub/proto"
-    "xujian.pub/http"
+    "xujian.pub/http_wrap"
     _ "xujian.pub/common"
     "xujian.pub/common/util"
 )
@@ -52,15 +52,15 @@ func (l *LookupServer) Main() {
 
     httpListener, err := net.Listen("tcp", l.Opts.HttpAddress)
     if err != nil {
-        l.logf("error, Listen(%s) failed - %s", l.opts.HttpAddress, err)
+        l.logf("error, Listen(%s) failed - %s", l.Opts.HttpAddress, err)
         os.Exit(1)
     }
     l.Lock()
     l.httpListener = httpListener
     l.Unlock()
-    hServer := &httpServer{ctx: l}
+    hServer := &httpServer{ctx: ctx}
     l.wg.Wrap(func() {
-        http_wrap.ServeHttp(l.listener, hServer, l.Opts.Logger)
+        http_wrap.ServeHttp(l.httpListener, hServer, l.Opts.Logger)
     })
 
 }
