@@ -3,6 +3,7 @@ package server
 import (
     "xujian.pub/proto"
     "xujian.pub/common"
+    "xujian.pub/http_wrap"
     "xujian.pub/common/util"
     //"xujian.pub/client"
     "time"
@@ -45,6 +46,7 @@ type Server struct {
 
     wg   util.WaitGroupWrapper
     tcpListener net.Listener
+    httpListener net.Listener
 }
 
 func NewServer(opts *ServerOption) *Server {
@@ -97,6 +99,18 @@ func (s *Server) Main() {
         proto.TCPServer(tcpListener, tcpServer, s.Opts.Logger)
     })
 
+    httpListener, err := net.Listen("tcp", s.Opts.HTTPAddress)
+    if err != nil {
+        s.logf("FATAL: listen %s failed - %s", s.Opts.HTTPAddress, err)
+        os.Exit(1)
+    }
+    s.Lock()
+    s.httpListener = httpListener
+    s.Unlock()
+    hServer := &httpServer{ctx: ctx}
+    s.wg.Wrap(func(){
+        http_wrap.ServeHttp(s.httpListener, hServer, s.Opts.Logger)
+    })
     //cache
     s.wg.Wrap(func() {
         s.cacheLoop()
@@ -197,6 +211,12 @@ func (s *Server) Exit() {
     s.Lock()
     if s.tcpListener != nil {
         s.tcpListener.Close()
+    }
+    s.Unlock()
+
+    s.Lock()
+    if s.httpListener != nil {
+        s.httpListener.Close()
     }
     s.Unlock()
 

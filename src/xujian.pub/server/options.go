@@ -11,7 +11,7 @@ import (
 type ServerOption struct {
     //server info host:port
     TCPAddress string `flag:"tcp-address"`
-    HttpAddress string `flag:"http-address"`
+    HTTPAddress string `flag:"http-address"`
     Verbose bool       `flag:"verbose"`
     LookupSrvAddrs []string `flag:"lookup-tcp-address"`
 
@@ -34,6 +34,7 @@ type ServerOption struct {
 func NewServerOption() *ServerOption {
     return &ServerOption {
         TCPAddress: "0.0.0.0:6789",
+        HTTPAddress: "0.0.0.0:6889",
         MaxClients: 100000,
         ClientTimeout: 60 * time.Second,
         Cached:     false,
