@@ -18,7 +18,7 @@ const (
 
 //lookupPeer do the job to connect the lookup server
 type lookupPeer struct {
-    ctx *context
+    //ctx *context
     lookupSrvAddr string
     conn net.Conn
     state int32
@@ -53,7 +53,7 @@ func NewlookupPeer(addr string, callback func(*lookupPeer)) *lookupPeer {
 func (l *lookupPeer) Connect() error {
     conn, err := net.DialTimeout("tcp", l.lookupSrvAddr, 5 * time.Second)
     if err != nil {
-        l.ctx.s.logf("connect to lookup server(%s) failed: %s", l.lookupSrvAddr, err.Error())
+    //    l.ctx.s.logf("connect to lookup server(%s) failed: %s", l.lookupSrvAddr, err.Error())
         return err
     }
     l.conn = conn
@@ -97,13 +97,11 @@ func (lp *lookupPeer) Command(cmd *common.Command) ([]byte, error) {
     if (cmd == nil) {
         return nil, nil
     }
-
     _, err := cmd.WriteTo(lp)
     if err != nil {
         lp.Close()
         return nil, err
     }
-
     data, err := proto.ReadResponse(lp)
     if err != nil {
         lp.Close()

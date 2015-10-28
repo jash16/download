@@ -55,14 +55,20 @@ func (h *httpServer) downHandler(rw http.ResponseWriter, r *http.Request) {
     data, err = ioutil.ReadFile(fullFile)
     if err != nil {
         h.ctx.s.logf("download error: %s", err)
-        data = []byte("internal error")
-        statusCode = 500
+        if strings.Contains(err.Error(), "no such file or directory") {
+            statusCode = 404
+            data = []byte("not found")
+        } else {
+            data = []byte("internal error")
+            statusCode = 500
+        }
         goto end
     }
     statusCode = 200
 end:
     length := len(data)
     rw.Header().Set("Content-Length", fmt.Sprintf("%d", length))
-    rw.Header().Set("Status-code", fmt.Sprintf("%d", statusCode))
+    rw.WriteHeader(statusCode)
+    //rw.Header().Set("Status-code", fmt.Sprintf("%d", statusCode))
     io.WriteString(rw, string(data))
 }

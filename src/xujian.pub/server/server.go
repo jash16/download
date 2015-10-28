@@ -190,11 +190,11 @@ func (s *Server) statLoop() {
     for {
         select {
         case <- t.C:
-            s.RLock()
-            s.logf("total_clients: %d, current_clients: %d, download_num: %d, download_size: %d",
-                   s.ClientNum, s.CurClientNum, s.DownloadNum, s.DownloadSize)
-            s.logf("cache_hits: %d, cache_miss: %d\n", s.dataCache.Hits, s.dataCache.MisHits)
-            s.RUnlock()
+   //         s.RLock()
+   //         s.logf("total_clients: %d, current_clients: %d, download_num: %d, download_size: %d",
+   //                s.ClientNum, s.CurClientNum, s.DownloadNum, s.DownloadSize)
+   //         s.logf("cache_hits: %d, cache_miss: %d\n", s.dataCache.Hits, s.dataCache.MisHits)
+   //         s.RUnlock()
         case <- s.exitChan:
             exitFlag = true
         }
